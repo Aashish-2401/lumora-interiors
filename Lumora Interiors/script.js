@@ -160,3 +160,180 @@ revealSections.forEach((section) => {
     revealObserver.observe(section);
 
 });
+// =================================
+// =================================
+// CONTACT FORM
+// =================================
+
+const contactForm = document.querySelector("#contactForm");
+
+if (contactForm) {
+
+    contactForm.addEventListener("submit", async (event) => {
+
+        event.preventDefault();
+
+        const submitButton =
+            contactForm.querySelector(".form-submit");
+
+
+        // =================================
+        // GET FORM DATA
+        // =================================
+
+        const formData = new FormData(contactForm);
+
+        const enquiryData = {
+
+            name: formData.get("name").trim(),
+
+            email: formData.get("email").trim(),
+
+            phone: formData.get("phone").trim(),
+
+            projectType:
+                formData.get("projectType"),
+
+            message:
+                formData.get("message").trim()
+
+        };
+
+
+        // =================================
+        // FRONTEND VALIDATION
+        // =================================
+
+        if (
+            !enquiryData.name ||
+            !enquiryData.email ||
+            !enquiryData.message
+        ) {
+
+            alert(
+                "Please fill in all required fields."
+            );
+
+            return;
+
+        }
+
+
+        const emailPattern =
+            /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!emailPattern.test(enquiryData.email)) {
+
+            alert(
+                "Please enter a valid email address."
+            );
+
+            return;
+
+        }
+
+
+        if (enquiryData.message.length < 5) {
+
+            alert(
+                "Please provide a little more information about your project."
+            );
+
+            return;
+
+        }
+
+
+        // =================================
+        // SUBMITTING STATE
+        // =================================
+
+        submitButton.disabled = true;
+
+        submitButton.textContent = "Sending...";
+
+
+        try {
+
+            const response = await fetch(
+                "http://localhost:5000/api/contact",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify(enquiryData)
+                }
+            );
+
+
+            const result =
+                await response.json();
+
+
+            // =================================
+            // SUCCESS
+            // =================================
+
+            if (response.ok) {
+
+                submitButton.textContent =
+                    "Enquiry Sent ✓";
+
+                alert(
+                    "Thank you! Your enquiry has been received."
+                );
+
+                contactForm.reset();
+
+
+                setTimeout(() => {
+
+                    submitButton.disabled = false;
+
+                    submitButton.textContent =
+                        "Send Enquiry →";
+
+                }, 3000);
+
+            }
+
+
+            // =================================
+            // SERVER ERROR
+            // =================================
+
+            else {
+
+                throw new Error(
+                    result.message ||
+                    "Something went wrong."
+                );
+
+            }
+
+
+        } catch (error) {
+
+            console.error(
+                "Contact form error:",
+                error
+            );
+
+            submitButton.disabled = false;
+
+            submitButton.textContent =
+                "Send Enquiry →";
+
+            alert(
+                error.message ||
+                "Unable to send your enquiry. Please try again."
+            );
+
+        }
+
+    });
+
+}
