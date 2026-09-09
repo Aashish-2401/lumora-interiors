@@ -6,7 +6,7 @@ const nodemailer = require("nodemailer");
 require("dotenv").config();
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 
 // =================================
@@ -47,10 +47,7 @@ const transporter = nodemailer.createTransport({
 
     // Temporary local-development workaround.
     // We will remove this before production deployment.
-    tls: {
-        rejectUnauthorized: false
-    }
-});
+   
 
 
 // =================================
