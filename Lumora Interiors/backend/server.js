@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 
-
 require("dotenv").config();
 
 const app = express();
@@ -16,7 +15,7 @@ app.use(cors({ origin: true }));
 app.use(express.json());
 
 // =================================
-// MONGODB DATABASE
+// MONGODB
 // =================================
 
 mongoose.connect(process.env.MONGODB_URI)
@@ -29,12 +28,6 @@ mongoose.connect(process.env.MONGODB_URI)
             error.message
         );
     });
-
-// =================================
-// EMAIL TRANSPORTER
-// =================================
-
-
 
 // =================================
 // ENQUIRY MODEL
@@ -89,6 +82,14 @@ const Enquiry = mongoose.model(
 );
 
 // =================================
+// HEALTH CHECK
+// =================================
+
+app.get("/health", (req, res) => {
+    res.status(200).send("OK");
+});
+
+// =================================
 // CONTACT API
 // =================================
 
@@ -131,7 +132,7 @@ app.post("/api/contact", async (req, res) => {
 
         }
 
-        // Save enquiry to MongoDB
+        // Save enquiry
 
         const newEnquiry = new Enquiry({
             name,
@@ -143,86 +144,123 @@ app.post("/api/contact", async (req, res) => {
 
         await newEnquiry.save();
 
-        console.log("New enquiry saved to database!");
+        console.log(
+            "New enquiry saved to database!"
+        );
 
-        // Respond immediately to the website
+        // Tell website that enquiry was received
 
         res.status(200).json({
             success: true,
             message: "Enquiry received successfully!"
         });
 
-        // Send email notification in background
+        // =================================
+        // RESEND EMAIL
+        // =================================
 
         fetch("https://api.resend.com/emails", {
-    method: "POST",
 
-    headers: {
-        "Content-Type": "application/json",
-        "Authorization":
-            `Bearer ${process.env.RESEND_API_KEY}`
-    },
+            method: "POST",
 
-    body: JSON.stringify({
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization":
+                    `Bearer ${process.env.RESEND_API_KEY}`
+            },
 
-        from: "onboarding@resend.dev",
+            body: JSON.stringify({
 
-        to: [process.env.EMAIL_USER],
+                from: "onboarding@resend.dev",
 
-        reply_to: email,
+                to: [process.env.EMAIL_USER],
 
-        subject:
-            `New Lumora Enquiry from ${name}`,
+                reply_to: email,
 
-        html: `
-            <h2>New LUMORA Website Enquiry</h2>
+                subject:
+                    `New Lumora Enquiry from ${name}`,
 
-            <p><strong>Name:</strong> ${name}</p>
+                html: `
+                    <h2>New LUMORA Website Enquiry</h2>
 
-            <p><strong>Email:</strong> ${email}</p>
+                    <p>
+                        <strong>Name:</strong>
+                        ${name}
+                    </p>
 
-            <p><strong>Phone:</strong>
-            ${phone || "Not provided"}</p>
+                    <p>
+                        <strong>Email:</strong>
+                        ${email}
+                    </p>
 
-            <p><strong>Project Type:</strong>
-            ${projectType || "Not specified"}</p>
+                    <p>
+                        <strong>Phone:</strong>
+                        ${phone || "Not provided"}
+                    </p>
 
-            <hr>
+                    <p>
+                        <strong>Project Type:</strong>
+                        ${projectType || "Not specified"}
+                    </p>
 
-            <p><strong>Message:</strong></p>
+                    <hr>
 
-            <p>${message}</p>
+                    <p>
+                        <strong>Message:</strong>
+                    </p>
 
-            <hr>
+                    <p>
+                        ${message}
+                    </p>
 
-            <p>This enquiry was submitted through the LUMORA website.</p>
-        `
-    })
-})
-.then(async (response) => {
+                    <hr>
 
-    const result = await response.json();
+                    <p>
+                        This enquiry was submitted through
+                        the LUMORA website.
+                    </p>
+                `
 
-    if (!response.ok) {
-        throw new Error(
-            result.message || "Resend email failed."
-        );
+            })
+
+        })
+
+        .then(async (response) => {
+
+            const result = await response.json();
+
+            if (!response.ok) {
+
+                throw new Error(
+                    result.message ||
+                    "Resend email failed."
+                );
+
+            }
+
+            console.log(
+                "Email notification sent successfully!"
+            );
+
+        })
+
+        .catch((error) => {
+
+            console.error(
+                "Email notification failed:",
+                error.message
+            );
+
+        });
+
     }
 
-    console.log(
-        "Email notification sent successfully!",
-        result
-    );
+    catch (error) {
 
-})
-.catch((error) => {
-
-    console.error(
-        "Email notification failed:",
-        error.message
-    );
-
-});
+        console.error(
+            "Error processing enquiry:",
+            error.message
+        );
 
         return res.status(500).json({
 
@@ -238,12 +276,8 @@ app.post("/api/contact", async (req, res) => {
 });
 
 // =================================
-// TEST ROUTE
+// ROOT ROUTE
 // =================================
-
-app.get("/health", (req, res) => {
-    res.status(200).send("OK");
-});
 
 app.get("/", (req, res) => {
 
