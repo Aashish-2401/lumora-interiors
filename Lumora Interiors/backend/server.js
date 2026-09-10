@@ -8,20 +8,15 @@ require("dotenv").config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-
 // =================================
 // MIDDLEWARE
 // =================================
 
-app.use(cors({
-    origin: true
-}));
-
+app.use(cors({ origin: true }));
 app.use(express.json());
 
-
 // =================================
-// DATABASE CONNECTION
+// MONGODB DATABASE
 // =================================
 
 mongoose.connect(process.env.MONGODB_URI)
@@ -29,78 +24,78 @@ mongoose.connect(process.env.MONGODB_URI)
         console.log("MongoDB connected successfully!");
     })
     .catch((error) => {
-        console.error("MongoDB connection failed:", error.message);
+        console.error(
+            "MongoDB connection failed:",
+            error.message
+        );
     });
 
-
 // =================================
-// EMAIL CONFIGURATION
+// EMAIL TRANSPORTER
 // =================================
 
 const transporter = nodemailer.createTransport({
     service: "gmail",
-
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
-    },
-
-    // Temporary local-development workaround.
-    // We will remove this before production deployment.
-   
-
+    }
+});
 
 // =================================
 // ENQUIRY MODEL
 // =================================
 
-const enquirySchema = new mongoose.Schema({
+const enquirySchema = new mongoose.Schema(
+    {
+        name: {
+            type: String,
+            required: true,
+            trim: true,
+            minlength: 2,
+            maxlength: 100
+        },
 
-    name: {
-        type: String,
-        required: true,
-        trim: true,
-        minlength: 2,
-        maxlength: 100
+        email: {
+            type: String,
+            required: true,
+            trim: true,
+            lowercase: true,
+            maxlength: 150
+        },
+
+        phone: {
+            type: String,
+            trim: true,
+            maxlength: 20
+        },
+
+        projectType: {
+            type: String,
+            trim: true,
+            maxlength: 50
+        },
+
+        message: {
+            type: String,
+            required: true,
+            trim: true,
+            minlength: 5,
+            maxlength: 2000
+        }
     },
-
-    email: {
-        type: String,
-        required: true,
-        trim: true,
-        lowercase: true,
-        maxlength: 150
-    },
-
-    phone: {
-        type: String,
-        trim: true,
-        maxlength: 20
-    },
-
-    projectType: {
-        type: String,
-        trim: true,
-        maxlength: 50
-    },
-
-    message: {
-        type: String,
-        required: true,
-        trim: true,
-        minlength: 5,
-        maxlength: 2000
+    {
+        timestamps: true
     }
+);
 
-}, {
-    timestamps: true
-});
-
-const Enquiry = mongoose.model("Enquiry", enquirySchema);
-
+const Enquiry = mongoose.model(
+    "Enquiry",
+    enquirySchema
+);
 
 // =================================
-// CONTACT FORM API
+// CONTACT API
 // =================================
 
 app.post("/api/contact", async (req, res) => {
@@ -115,10 +110,7 @@ app.post("/api/contact", async (req, res) => {
             message
         } = req.body;
 
-
-        // =================================
-        // BASIC VALIDATION
-        // =================================
+        // Required fields
 
         if (!name || !email || !message) {
 
@@ -129,10 +121,7 @@ app.post("/api/contact", async (req, res) => {
 
         }
 
-
-        // =================================
-        // EMAIL VALIDATION
-        // =================================
+        // Email validation
 
         const emailPattern =
             /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -146,10 +135,7 @@ app.post("/api/contact", async (req, res) => {
 
         }
 
-
-        // =================================
-        // SAVE ENQUIRY
-        // =================================
+        // Save enquiry to MongoDB
 
         const newEnquiry = new Enquiry({
             name,
@@ -161,12 +147,11 @@ app.post("/api/contact", async (req, res) => {
 
         await newEnquiry.save();
 
-        console.log("New enquiry saved to database!");
+        console.log(
+            "New enquiry saved to database!"
+        );
 
-
-        // =================================
-        // SEND EMAIL
-        // =================================
+        // Send email notification
 
         await transporter.sendMail({
 
@@ -176,7 +161,8 @@ app.post("/api/contact", async (req, res) => {
 
             replyTo: email,
 
-            subject: `New Lumora Enquiry from ${name}`,
+            subject:
+                `New Lumora Enquiry from ${name}`,
 
             text: `
 New enquiry received from the LUMORA website.
@@ -203,21 +189,18 @@ This enquiry was submitted through the LUMORA website.
             `
         });
 
-        console.log("Email notification sent successfully!");
+        console.log(
+            "Email notification sent successfully!"
+        );
 
-
-        // =================================
-        // SUCCESS RESPONSE
-        // =================================
-
-        res.status(200).json({
+        return res.status(200).json({
 
             success: true,
 
-            message: "Enquiry received successfully!"
+            message:
+                "Enquiry received successfully!"
 
         });
-
 
     } catch (error) {
 
@@ -226,18 +209,18 @@ This enquiry was submitted through the LUMORA website.
             error.message
         );
 
-        res.status(500).json({
+        return res.status(500).json({
 
             success: false,
 
-            message: "Unable to process enquiry."
+            message:
+                "Unable to process enquiry."
 
         });
 
     }
 
 });
-
 
 // =================================
 // TEST ROUTE
@@ -251,15 +234,18 @@ app.get("/", (req, res) => {
 
 });
 
-
 // =================================
 // START SERVER
 // =================================
 
-app.listen(PORT, () => {
+app.listen(
+    PORT,
+    "0.0.0.0",
+    () => {
 
-    console.log(
-        `LUMORA backend running on port ${PORT}`
-    );
+        console.log(
+            `LUMORA backend running on port ${PORT}`
+        );
 
-});
+    }
+);
