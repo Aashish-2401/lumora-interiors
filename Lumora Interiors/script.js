@@ -256,7 +256,7 @@ if (contactForm) {
         try {
 
             const response = await fetch(
-                "http://localhost:5000/api/contact",
+                "https://lumora-backend-ry3c.onrender.com/api/contact",
                 {
                     method: "POST",
 
