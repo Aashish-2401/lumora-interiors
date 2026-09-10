@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const nodemailer = require("nodemailer");
+
 
 require("dotenv").config();
 
@@ -34,13 +34,7 @@ mongoose.connect(process.env.MONGODB_URI)
 // EMAIL TRANSPORTER
 // =================================
 
-const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    }
-});
+
 
 // =================================
 // ENQUIRY MODEL
@@ -160,64 +154,75 @@ app.post("/api/contact", async (req, res) => {
 
         // Send email notification in background
 
-        transporter.sendMail({
+        fetch("https://api.resend.com/emails", {
+    method: "POST",
 
-            from: process.env.EMAIL_USER,
+    headers: {
+        "Content-Type": "application/json",
+        "Authorization":
+            `Bearer ${process.env.RESEND_API_KEY}`
+    },
 
-            to: process.env.EMAIL_USER,
+    body: JSON.stringify({
 
-            replyTo: email,
+        from: "onboarding@resend.dev",
 
-            subject:
-                `New Lumora Enquiry from ${name}`,
+        to: [process.env.EMAIL_USER],
 
-            text: `
-New enquiry received from the LUMORA website.
+        reply_to: email,
 
---------------------------------
+        subject:
+            `New Lumora Enquiry from ${name}`,
 
-Name: ${name}
+        html: `
+            <h2>New LUMORA Website Enquiry</h2>
 
-Email: ${email}
+            <p><strong>Name:</strong> ${name}</p>
 
-Phone: ${phone || "Not provided"}
+            <p><strong>Email:</strong> ${email}</p>
 
-Project Type: ${projectType || "Not specified"}
+            <p><strong>Phone:</strong>
+            ${phone || "Not provided"}</p>
 
---------------------------------
+            <p><strong>Project Type:</strong>
+            ${projectType || "Not specified"}</p>
 
-Message:
+            <hr>
 
-${message}
+            <p><strong>Message:</strong></p>
 
---------------------------------
+            <p>${message}</p>
 
-This enquiry was submitted through the LUMORA website.
-            `
+            <hr>
 
-        })
-        .then(() => {
+            <p>This enquiry was submitted through the LUMORA website.</p>
+        `
+    })
+})
+.then(async (response) => {
 
-            console.log(
-                "Email notification sent successfully!"
-            );
+    const result = await response.json();
 
-        })
-        .catch((error) => {
-
-            console.error(
-                "Email notification failed:",
-                error.message
-            );
-
-        });
-
-    } catch (error) {
-
-        console.error(
-            "Error processing enquiry:",
-            error.message
+    if (!response.ok) {
+        throw new Error(
+            result.message || "Resend email failed."
         );
+    }
+
+    console.log(
+        "Email notification sent successfully!",
+        result
+    );
+
+})
+.catch((error) => {
+
+    console.error(
+        "Email notification failed:",
+        error.message
+    );
+
+});
 
         return res.status(500).json({
 
