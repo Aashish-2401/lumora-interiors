@@ -100,6 +100,8 @@ const Enquiry = mongoose.model(
 
 app.post("/api/contact", async (req, res) => {
 
+    console.log("Contact form request received!");
+
     try {
 
         const {
@@ -147,13 +149,18 @@ app.post("/api/contact", async (req, res) => {
 
         await newEnquiry.save();
 
-        console.log(
-            "New enquiry saved to database!"
-        );
+        console.log("New enquiry saved to database!");
 
-        // Send email notification
+        // Respond immediately to the website
 
-        await transporter.sendMail({
+        res.status(200).json({
+            success: true,
+            message: "Enquiry received successfully!"
+        });
+
+        // Send email notification in background
+
+        transporter.sendMail({
 
             from: process.env.EMAIL_USER,
 
@@ -187,18 +194,21 @@ ${message}
 
 This enquiry was submitted through the LUMORA website.
             `
-        });
 
-        console.log(
-            "Email notification sent successfully!"
-        );
+        })
+        .then(() => {
 
-        return res.status(200).json({
+            console.log(
+                "Email notification sent successfully!"
+            );
 
-            success: true,
+        })
+        .catch((error) => {
 
-            message:
-                "Enquiry received successfully!"
+            console.error(
+                "Email notification failed:",
+                error.message
+            );
 
         });
 
