@@ -236,6 +236,10 @@ This enquiry was submitted through the LUMORA website.
 // TEST ROUTE
 // =================================
 
+app.get("/health", (req, res) => {
+    res.status(200).send("OK");
+});
+
 app.get("/", (req, res) => {
 
     res.send(
